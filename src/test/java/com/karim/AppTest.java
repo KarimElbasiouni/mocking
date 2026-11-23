@@ -1,11 +1,21 @@
 package com.karim;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 
+import java.time.Clock;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
 
 public class AppTest{
@@ -63,5 +73,76 @@ public class AppTest{
         // then
         verify(listMock, times(2) ).clear();
         verifyNoMoreInteractions(listMock);
+    }
+
+    @Test
+    void mockitoDbb() {
+        // given
+        List<String> mockList = mock();
+        given(mockList.get(0)).willReturn("hello");
+        // when
+        String actual = mockList.get(0);
+        // then
+        then(mockList).should().get(0);
+        assertThat(actual).isEqualTo("hello");
+    }
+
+    @Test
+    void chainedStubbing(){
+        // given
+        List<String> mockList = mock();
+        // when
+        given(mockList.size()).willReturn(1, 2, 3, 4);
+        // then
+        assertThat(mockList.size()).isEqualTo(1);
+        assertThat(mockList.size()).isEqualTo(2);
+        assertThat(mockList.size()).isEqualTo(3);
+        assertThat(mockList.size()).isEqualTo(4);
+        assertThat(mockList.size()).isEqualTo(4);
+
+    }
+    @Test
+    void shouldReturnCustomAnswer() {
+        // given
+        List<String> mockList = mock();
+        // when
+        given(mockList.get(anyInt())).will(invocation -> {
+            int index = invocation.getArgument(0);
+            return "Amigos: " +  index;
+        });
+        // then
+        assertThat(mockList.get(0)).isEqualTo("Amigos: 0");
+        assertThat(mockList.get(1)).isEqualTo("Amigos: 1");
+    }
+
+    @Test
+    void async(){
+        // given
+        Runnable mockRunnable = mock();
+        // when
+        Executors.newSingleThreadScheduledExecutor()
+                .schedule(mockRunnable, 200, TimeUnit.MILLISECONDS);
+        // then
+        then(mockRunnable).should(timeout(500).times(1)).run();
+    }
+
+    @Test
+    void canAdvanceClock(){
+        // given
+        Clock clock = mock();
+        ZoneId zoneId = ZoneId.of("Europe/London");
+
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(2025, 1, 1, 0, 0, 0, 0, zoneId);
+
+        given(clock.getZone()).willReturn(zoneId);
+        given(clock.instant()).willReturn(zonedDateTime.toInstant());
+
+        ZonedDateTime now = ZonedDateTime.now(clock);
+        System.out.println(now);
+
+        //advance clock
+        given(clock.instant()).willReturn(now.plusMinutes(15).toInstant());
+
+        System.out.println(ZonedDateTime.now(clock));
     }
 }
