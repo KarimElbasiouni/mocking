@@ -30,7 +30,6 @@ class VerificationCodeServiceTest {
         underTest = new VerificationCodeService(clock, duration);
         given(clock.getZone()).willReturn(zoneId);
         given(clock.instant()).willReturn(fixedZdt.toInstant());
-
     }
 
     @Test
